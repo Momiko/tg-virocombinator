@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SS13 Virology Combinator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: rgba(15, 23, 42, 0.6);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.4);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --danger: #f43f5e;
+            --danger-glow: rgba(244, 63, 94, 0.2);
+            --row-hover: rgba(51, 65, 85, 0.5);
+            --row-selected: rgba(56, 189, 248, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.05), transparent 25%);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 20px 40px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+        }
+
+        .header-title {
+            font-size: 22px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-stats {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.3);
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--panel-border);
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left Panel - Symptom Selection */
+        .left-panel {
+            flex: 1.4;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--panel-border);
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .table-container {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 5;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        th {
+            padding: 16px 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.2s, background 0.2s;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        th:hover {
+            color: var(--text-main);
+            background: rgba(255,255,255,0.02);
+        }
+
+        th.sort-active {
+            color: var(--accent);
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        th .sort-indicator {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 11px;
+            transition: transform 0.2s;
+            font-weight: bold;
+        }
+
+        .search-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: var(--text-main);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            width: 80px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 5px var(--accent-glow);
+            width: 120px;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .stat-cell {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+        }
+        
+        .stat-positive { color: var(--success); }
+        .stat-negative { color: var(--danger); }
+        .stat-neutral { color: var(--text-muted); }
+
+        .active-sort-col {
+            background: rgba(56, 189, 248, 0.05);
+            box-shadow: inset 0 0 10px rgba(56, 189, 248, 0.05);
+        }
+
+        tr {
+            transition: transform 0.1s, background-color 0.2s;
+            cursor: pointer;
+        }
+
+        tr:hover {
+            background-color: var(--row-hover);
+        }
+
+        tr.selected {
+            background-color: var(--row-selected);
+            border-left: 3px solid var(--accent);
+        }
+        
+        tr:not(.selected) {
+            border-left: 3px solid transparent;
+        }
+        
+        tr.disabled {
+            cursor: not-allowed;
+        }
+
+        tr.disabled td {
+            opacity: 0.4;
+        }
+
+        /* Custom Checkbox */
+        .checkbox-cell {
+            width: 40px;
+            text-align: center;
+        }
+
+        .custom-checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #475569;
+            border-radius: 4px;
+            background: transparent;
+            position: relative;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+
+        .custom-checkbox:checked {
+            background: var(--accent);
+            border-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+            transform: scale(1.1);
+        }
+
+        .custom-checkbox:checked::after {
+            content: "✓";
+            color: #fff;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .custom-checkbox:disabled {
+            opacity: 0.3;
+            border-color: #334155;
+        }
+
+        /* Tooltip Setup for Symptom Info */
+        .symptom-name-cell {
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        .tooltip-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            margin-left: 8px;
+        }
+
+        .tooltip-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #334155;
+            color: #cbd5e1;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: help;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .tooltip-wrap:hover .tooltip-icon {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 280px;
+            background: rgba(15, 23, 42, 0.95);
+            color: #e2e8f0;
+            text-align: left;
+            border-radius: 8px;
+            padding: 12px;
+            position: absolute;
+            z-index: 20;
+            top: 50%;
+            left: calc(100% + 12px);
+            bottom: auto;
+            transform: translateY(-50%) translateX(-10px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.5;
+            pointer-events: none;
+        }
+
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: 100%;
+            left: auto;
+            margin-top: -6px;
+            margin-left: 0;
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent rgba(15, 23, 42, 0.95) transparent transparent;
+        }
+
+        .tooltip-wrap:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(-50%) translateX(0);
+        }
+
+        /* Tooltip Setup for Chemical Recipes */
+        .chem-tooltip-wrap {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            transition: color 0.2s;
+        }
+
+        .chem-tooltip-wrap:hover {
+            color: #fff;
+        }
+
+        .chem-tooltip-text {
+            visibility: hidden;
+            width: max-content;
+            white-space: nowrap;
+            background: rgba(15, 23, 42, 0.95);
+            color: #e2e8f0;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px 10px;
+            position: absolute;
+            z-index: 30;
+            top: 50%;
+            left: 100%;
+            margin-left: 8px;
+            transform: translateY(-50%) translateX(-5px);
+            opacity: 0;
+            transition: all 0.2s;
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 1.4;
+            text-transform: none;
+            letter-spacing: normal;
+            pointer-events: none;
+        }
+
+        .chem-tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: 100%;
+            margin-top: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent rgba(15, 23, 42, 0.95) transparent transparent;
+        }
+
+        .chem-tooltip-wrap:hover .chem-tooltip-text {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(-50%) translateX(0);
+        }
+
+        /* Right Panel - Stats & Thresholds */
+        .right-panel {
+            flex: 1;
+            background: linear-gradient(180deg, #0f172a, #0b0f19);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .selected-count {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            background: rgba(56, 189, 248, 0.1);
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--accent-glow);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(56, 189, 248, 0.3);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1;
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+
+        .stat-value.positive { color: var(--success); text-shadow: 0 0 15px var(--success-glow); }
+        .stat-value.negative { color: var(--danger); text-shadow: 0 0 15px var(--danger-glow); }
+        .stat-value.neutral { color: var(--text-muted); }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        /* Thresholds */
+        .thresholds-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #64748b;
+            border: 2px dashed #334155;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+
+        .threshold-card {
+            background: rgba(30, 41, 59, 0.3);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .threshold-card.unmet {
+            border-color: rgba(244, 63, 94, 0.2);
+        }
+
+        .threshold-card.met {
+            background: rgba(16, 185, 129, 0.05);
+            border-color: rgba(16, 185, 129, 0.3);
+            opacity: 1;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.1);
+            transform: scale(1.01);
+        }
+
+        .threshold-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .threshold-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .threshold-req {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.4);
+            font-weight: 700;
+        }
+
+        .threshold-card.met .threshold-req { color: var(--success); }
+        .threshold-card.unmet .threshold-req { color: var(--danger); }
+
+        .threshold-effect {
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.5;
+            padding-top: 4px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .threshold-icon {
+            margin-right: 6px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .threshold-card.met .threshold-icon { color: var(--success); }
+        .threshold-card.unmet .threshold-icon { color: #64748b; }
+        .threshold-card.unmet .threshold-text { color: #94a3b8; }
+
+        .threshold-progress-bg {
+            height: 4px;
+            background: #334155;
+            border-radius: 2px;
+            overflow: hidden;
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .threshold-bar {
+            height: 100%;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s;
+        }
+
+        .threshold-card.met .threshold-bar {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success-glow);
+            width: 100% !important;
+        }
+
+        .threshold-card.unmet .threshold-bar {
+            background: var(--danger);
+        }
+
+        /* Pin Button */
+        .pin-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            padding: 4px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pin-btn:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .pin-btn.active {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+        }
+
+    
+        .action-btn {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--panel-border);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-transform: uppercase;
+        }
+
+        .action-btn:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        /* Chemical Tiers Dropdown */
+        .chem-tier-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .chem-tier-btn {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--panel-border);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chem-tier-btn:hover {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: rgba(56, 189, 248, 0.3);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+        }
+
+        .chem-tier-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 12px;
+            width: 280px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            padding: 12px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .chem-tier-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .chem-tier-menu .chem-tooltip-text {
+            left: auto;
+            right: 100%;
+            margin-left: 0;
+            margin-right: 12px;
+            transform: translateY(-50%) translateX(5px);
+        }
+        
+        .chem-tier-menu .chem-tooltip-wrap:hover .chem-tooltip-text {
+            transform: translateY(-50%) translateX(0);
+        }
+
+        .chem-tier-menu .chem-tooltip-text::after {
+            right: auto;
+            left: 100%;
+            border-color: transparent transparent transparent rgba(15, 23, 42, 0.95);
+        }
+
+        .tier-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 12px;
+        }
+        
+        .tier-row:last-child {
+            border-bottom: none;
+        }
+
+        .tier-name { color: var(--text-main); font-weight: 500; }
+        .tier-lvl { color: var(--accent); font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        
+        .centcom-tooltip {
+            visibility: hidden; 
+            background: rgba(15, 23, 42, 0.95); 
+            color: #fff; 
+            text-align: center; 
+            border-radius: 4px; 
+            padding: 6px 10px; 
+            position: absolute; 
+            z-index: 100; 
+            right: 0; 
+            top: 120%; 
+            white-space: nowrap; 
+            border: 1px solid var(--danger); 
+            font-size: 11px;
+        }
+        .centcom-error:hover .centcom-tooltip {
+            visibility: visible;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div style="display: flex; align-items: baseline; gap: 12px;">
+            <div class="header-title">SS13 Virology Combinator</div>
+            <span id="easter-egg-text" style="font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: normal; color: rgba(255,255,255,0.08); font-style: italic; display: none; user-select: text; letter-spacing: 0;"></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="position: relative; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--danger); font-weight: 700; cursor: help;" class="centcom-error">
+                [CentCom Connection: ERROR]
+                <div class="centcom-tooltip">Your experiments are hidden. 🤡</div>
+            </div>
+            <div class="chem-tier-dropdown">
+                <button class="chem-tier-btn" onclick="document.getElementById('chem-tier-menu').classList.toggle('show'); event.stopPropagation();">🔬 Mutagen Tiers</button>
+                <div id="chem-tier-menu" class="chem-tier-menu" onclick="event.stopPropagation();">
+                    <div class="tier-row"><span class="chem-tooltip-wrap tier-name">Virus Rations<div class="chem-tooltip-text">1 part Virus Food<br>1 part Synaptizine</div></span><span class="tier-lvl">Level 1</span></div>
+                    <div class="tier-row"><span class="chem-tooltip-wrap tier-name">Virus Food<div class="chem-tooltip-text">5 parts Water<br>5 parts Milk<br><span style="opacity:0.7; font-size:10px;">(Virology lab has its own Virus Food Dispenser.)</span></div></span><span class="tier-lvl">Level 1 - 2</span></div>
+                    <div class="tier-row"><span class="chem-tooltip-wrap tier-name">Unstable Mutagen<div class="chem-tooltip-text">1 part Chlorine<br>1 part Phosphorus<br>1 part Radium</div></span><span class="tier-lvl">Level 2 - 4</span></div>
+                    <div class="tier-row"><span class="chem-tooltip-wrap tier-name">Mutagenic Agar<div class="chem-tooltip-text">1 part Unstable Mutagen<br>1 part Virus Food</div></span><span class="tier-lvl">Level 3</span></div>
+                    <div class="tier-row"><span class="chem-tooltip-wrap tier-name">Sucrose Agar<div class="chem-tooltip-text">1 part Mutagenic Agar<br>1 part Sugar OR Saline-Glucose</div></span><span class="tier-lvl">Level 4</span></div>
+                    <div class="tier-row"><span class="chem-tooltip-wrap tier-name">Weakened Virus Plasma<div class="chem-tooltip-text">1 part Virus Plasma<br>1 part Synaptizine<br><em style="opacity: 0.8; font-size: 10px; color: #fbbf24;">Pay attention to the temperatures.</em></div></span><span class="tier-lvl">Level 5</span></div>
+                    <div class="tier-row"><span class="chem-tooltip-wrap tier-name">Virus Plasma<div class="chem-tooltip-text">1 part Virus Food<br>1 part Plasma</div></span><span class="tier-lvl">Level 6</span></div>
+                    <div class="tier-row"><span class="chem-tooltip-wrap tier-name">Decaying Uranium Gel<div class="chem-tooltip-text">1 part Virus Food<br>1 part Uranium</div></span><span class="tier-lvl">Level 6 - 7</span></div>
+                    <div class="tier-row"><span class="chem-tooltip-wrap tier-name">Unstable Uranium Gel<div class="chem-tooltip-text">1 part Virus Plasma<br>5 parts Uranium</div></span><span class="tier-lvl">Level 7</span></div>
+                    <div class="tier-row"><span class="chem-tooltip-wrap tier-name">Stable Uranium Gel<div class="chem-tooltip-text">1 part Plasma<br>10 parts Uranium<br>10 parts Silver OR Gold</div></span><span class="tier-lvl">Level 8</span></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Left Panel: Symptoms Selection -->
+        <div class="left-panel">
+            <div class="table-container">
+                <table id="symptoms-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px; text-align: center; padding: 10px 0;">
+                                <button onclick="clearAllSymptoms(); event.stopPropagation();" style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 4px; padding: 4px; cursor: pointer; color: var(--danger); font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='rgba(244, 63, 94, 0.2)'" onmouseout="this.style.background='rgba(244, 63, 94, 0.1)'" title="Clear All Selected">🗑️</button>
+                            </th>
+                            <th onclick="sortTable('name')" style="padding: 10px 12px; min-width: 200px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="text" id="search-input" placeholder="Search..." class="search-input" oninput="handleSearch(event)" onclick="event.stopPropagation()">
+                                    <span style="flex: 1; display: flex; align-items: center;">
+                                        Symptom <span class="sort-indicator" id="sort-name"></span>
+                                    </span>
+                                </div>
+                            </th>
+                            <th onclick="sortTable('level')" style="text-align:center; width: 140px;">Tier <span class="sort-indicator" id="sort-level"></span></th>
+                            <th onclick="sortTable('stealth')" style="text-align:center; width: 80px;">Stealth <span class="sort-indicator" id="sort-stealth" style="display:inline-block; width:24px; text-align:left;"></span></th>
+                            <th onclick="sortTable('resistance')" style="text-align:center; width: 80px;">Resist <span class="sort-indicator" id="sort-resistance" style="display:inline-block; width:24px; text-align:left;"></span></th>
+                            <th onclick="sortTable('stage_speed')" style="text-align:center; width: 80px;">Speed <span class="sort-indicator" id="sort-stage_speed" style="display:inline-block; width:24px; text-align:left;"></span></th>
+                            <th onclick="sortTable('transmission')" style="text-align:center; width: 80px;">Transm <span class="sort-indicator" id="sort-transmission" style="display:inline-block; width:24px; text-align:left;"></span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="symptoms-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right Panel: Stats & Thresholds -->
+        <div class="right-panel">
+            <div class="section-title">
+                Calculated Virus Stats
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="action-btn" onclick="openSaveModal()">💾 Save/Load</button>
+                    <div class="selected-count" id="selected-count">0 / 6 Selected</div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value neutral" id="stat-stealth">0</div>
+                    <div class="stat-label">Stealth</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value neutral" id="stat-resistance">0</div>
+                    <div class="stat-label">Resistance</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value neutral" id="stat-stagespeed">0</div>
+                    <div class="stat-label">Stage Speed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value neutral" id="stat-transmission">0</div>
+                    <div class="stat-label">Transmission</div>
+                </div>
+            </div>
+
+            <div class="section-title" style="margin-top: 10px;">
+                Active Thresholds
+            </div>
+
+            <div class="thresholds-container" id="thresholds-container">
+                <div class="empty-state">Select symptoms to view their thresholds.</div>
+            </div>
+            
+            <div style="margin-top: auto; padding-top: 24px;">
+                <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid var(--panel-border); border-radius: 8px; padding: 12px; font-size: 12px; color: var(--text-muted); display: flex; align-items: flex-start; gap: 8px;">
+                    <div style="font-size: 16px;">💡</div>
+                    <div>
+                        <strong style="color: var(--text-main);">Synaptizine:</strong> 1 part Sugar, 1 part Lithium, 1 part Water<br>
+                        <div style="margin-top: 4px;">
+                            <strong style="color: var(--text-main);">Formaldehyde:</strong> 1 part Ethanol, 1 part Oxygen, 1 part Silver <em style="opacity: 0.8; font-size: 11px; color: #fbbf24;">(Temp: 420K)</em>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 16px; font-size: 11px; color: var(--text-muted); opacity: 0.6; font-family: 'JetBrains Mono', monospace; line-height: 1.5;">
+                    Built with lots of unstable mutagen. Found a bug or have a suggestion?<br>
+                    Add me on Discord (momoe31) or open an issue on GitHub if you're a nerd.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const symptomsData = [
+            {
+                name: "Acute Respiratory Distress Syndrome", level: 7,
+                stealth: -2, resistance: 0, stage_speed: -1, transmission: -2,
+                description: "Causes heavy suffocation damage. Becomes even more lethal if the mob has more than 120 suffocation damage.",
+                thresholds: [
+                    { stat: "Stage Speed", value: 8, effect: "Additionally synthesizes pancuronium and sodium thiopental inside the host." },
+                    { stat: "Transmission", value: 8, effect: "The effect is 2 times stronger. (Doubles the damage caused by the symptom.)" }
+                ]
+            },
+            {
+                name: "Alkali Perspiration", level: 7,
+                stealth: 2, resistance: -2, stage_speed: -2, transmission: -2,
+                description: "Causes the affected mob to burst into flames periodically, while also giving them small doses of Napalm and Chlorine Trifluoride. If wet when bursting into flames, the victims will also explode.",
+                thresholds: [
+                    { stat: "Resistance", value: 9, effect: "The effect is 2 times stronger. (Doubles the intensity of the immolation effect, but reduces the frequency of all of this symptom's effects.)" },
+                    { stat: "Stage Speed", value: 8, effect: "Explosion power is 2 times stronger when wet. (Increases explosion radius and damage to the host.)" },
+                    { stat: "Transmission", value: 8, effect: "Additionally synthesizes chlorine trifluoride and napalm inside the host. More chemicals are synthesized if the resistance 9 threshold has been met." }
+                ]
+            },
+            {
+                name: "Alopecia", level: 4,
+                stealth: 0, resistance: 1, stage_speed: 2, transmission: 2,
+                description: "Causes rapid hair loss.",
+                thresholds: []
+            },
+            {
+                name: "Anticoagulant", level: 7,
+                stealth: 1, resistance: 0, stage_speed: -2, transmission: -2,
+                description: "Causes bleeding wounds on the mob to get worse every tick. Can also increase their susceptibility to receiving bleeding wounds.",
+                thresholds: [
+                    { stat: "Stage Speed", value: 9, effect: "Bleeding is significantly worsened." },
+                    { stat: "Stealth", value: 3, effect: "The symptom remains hidden until active." }
+                ]
+            },
+            {
+                name: "Autophagocytosis Necrosis", level: 7,
+                stealth: -2, resistance: -2, stage_speed: 1, transmission: -2,
+                description: "Causes the mob's cells to decay rapidly, causing brute damage, constant bleeding and elevated hunger.",
+                thresholds: [
+                    { stat: "Stage Speed", value: 7, effect: "Increases cell decay rate." },
+                    { stat: "Stealth", value: 5, effect: "The symptom remains hidden until active." }
+                ]
+            },
+            {
+                name: "Chills", level: 2,
+                stealth: 0, resistance: 2, stage_speed: 3, transmission: 2,
+                description: "Cools down your body. Won't reach damaging levels unless thresholds are met.",
+                thresholds: [
+                    { stat: "Stage Speed", value: 5, effect: "The effect is 1.5 times stronger. (Increases the intensity of the cooling; the host can fall below safe temperature levels.)" },
+                    { stat: "Stage Speed", value: 10, effect: "The effect is 2.5 times stronger. (Increases the intensity of the cooling even further.)" }
+                ]
+            },
+            {
+                name: "Choking", level: 3,
+                stealth: -3, resistance: -2, stage_speed: -2, transmission: -2,
+                description: "Causes spikes of oxygen deprivation. Deals damage based on stage speed and stealth.",
+                thresholds: [
+                    { stat: "Stage Speed", value: 8, effect: "Causes choking more frequently." },
+                    { stat: "Stealth", value: 4, effect: "The symptom remains hidden until active." }
+                ]
+            },
+            {
+                name: "Confusion", level: 4,
+                stealth: 1, resistance: -1, stage_speed: -3, transmission: 0,
+                description: "Makes the affected mob be confused for short periods of time, making them walk in random directions.",
+                thresholds: [
+                    { stat: "Resistance", value: 6, effect: "Causes brain damage over time." },
+                    { stat: "Transmission", value: 6, effect: "The effect is 1.5 times stronger. (Increases confusion duration and strength.)" },
+                    { stat: "Stealth", value: 4, effect: "The symptom remains hidden until active." }
+                ]
+            },
+            {
+                name: "Coughing", level: 1,
+                stealth: -1, resistance: 3, stage_speed: 1, transmission: 2,
+                description: "The virus irritates the throat of the host, causing occasional coughing. Each cough will try to infect bystanders who are within 1 tile of the host with the virus.",
+                thresholds: [
+                    { stat: "Resistance", value: 11, effect: "The host will drop small items when coughing." },
+                    { stat: "Resistance", value: 15, effect: "Occasionally causes coughing fits that stun the host. The extra coughs do not spread the virus." },
+                    { stat: "Stage Speed", value: 6, effect: "Increases cough frequency." },
+                    { stat: "Transmission", value: 7, effect: "Coughing will now infect bystanders up to 2 tiles away." },
+                    { stat: "Stealth", value: 4, effect: "The symptom remains hidden until active." }
+                ]
+            },
+            {
+                name: "Deafness", level: 4,
+                stealth: -1, resistance: -2, stage_speed: -1, transmission: -3,
+                description: "Causes intermittent loss of hearing.",
+                thresholds: [
+                    { stat: "Resistance", value: 9, effect: "Causes permanent deafness, instead of intermittent." },
+                    { stat: "Stealth", value: 4, effect: "The symptom remains hidden until active." }
+                ]
+            },
+            {
+                name: "Disfiguration", level: 5,
+                stealth: 2, resistance: 0, stage_speed: 3, transmission: 1,
+                description: "Causes the host's face to crumble and cave in, disfiguring the host to appear as unknown to others until cured.",
+                thresholds: []
+            },
+            {
+                name: "Dizziness", level: 4,
+                stealth: 0, resistance: -2, stage_speed: -3, transmission: -1,
+                description: "Shakes the affected mob's screen.",
+                thresholds: [
+                    { stat: "Transmission", value: 6, effect: "The effect is 2 times stronger. (Also causes druggy vision.)" },
+                    { stat: "Stealth", value: 4, effect: "The symptom remains hidden until active." }
+                ]
+            },
+            {
+                name: "Dormant DNA Activator", level: 6,
+                stealth: -2, resistance: -3, stage_speed: 0, transmission: -3,
+                description: "The virus bonds with the DNA of the host, activating random dormant mutations within their DNA. When the virus is cured, the host's genetic alterations are undone.",
+                thresholds: [
+                    { stat: "Resistance", value: 8, effect: "The negative and mildly negative mutations caused by the virus are mutadone-proof." },
+                    { stat: "Resistance", value: 14, effect: "The host's genetic alterations are not undone when the virus is cured." },
+                    { stat: "Stage Speed", value: 10, effect: "The virus activates dormant mutations at a much faster rate." },
+                    { stat: "Stealth", value: 5, effect: "Only activates negative mutations in hosts." }
+                ]
+            },
+            {
+                name: "Eternal Youth", level: 5,
+                stealth: 3, resistance: 4, stage_speed: 4, transmission: -4,
+                description: "Makes you never physically older than young adulthood and prevents death by old age. Should be used for buffing your disease.",
+                thresholds: []
+            },
+            {
+                name: "Facial Hypertrichosis", level: 4,
+                stealth: 0, resistance: 3, stage_speed: 2, transmission: 1,
+                description: "Makes you grow a massive beard, regardless of gender.",
+                thresholds: []
+            },
+            {
+                name: "Fever", level: 2,
+                stealth: 0, resistance: 3, stage_speed: 3, transmission: 2,
+                description: "Heats up your body. Will not reach damaging levels of heat unless resistance thresholds are met.",
+                thresholds: [
+                    { stat: "Resistance", value: 5, effect: "The effect is 1.5 times stronger. (Increases fever intensity, fever can overheat and harm the host.)" },
+                    { stat: "Resistance", value: 10, effect: "The effect is 2.5 times stronger. (Further increases fever intensity.)" }
+                ]
+            },
+            {
+                name: "Hallucigen", level: 5,
+                stealth: 1, resistance: -4, stage_speed: 1, transmission: -1,
+                description: "Makes the affected mob have hallucinations for short periods of time. Available in Virus Crates.",
+                thresholds: [
+                    { stat: "Stage Speed", value: 7, effect: "The effect is 2 times stronger. (Increases the amount of hallucinations.)" },
+                    { stat: "Stealth", value: 4, effect: "The virus mimics positive symptoms." }
+                ]
+            },
+            {
+                name: "Headache", level: 1,
+                stealth: -1, resistance: 4, stage_speed: 2, transmission: 0,
+                description: "Displays an annoying message! Should be used for buffing your disease.",
+                thresholds: [
+                    { stat: "Stage Speed", value: 6, effect: "The effect is 2 times stronger. (Headaches will cause severe pain, that weakens the host.)" },
+                    { stat: "Stage Speed", value: 9, effect: "The effect is 3 times stronger. (Headaches become less frequent but far more intense, preventing any action from the host.)" },
+                    { stat: "Stealth", value: 4, effect: "Reduces headache frequency until later stages." }
+                ]
+            },
+            {
+                name: "Hyphema", level: 5,
+                stealth: -1, resistance: -4, stage_speed: -4, transmission: -3,
+                description: "Inflicts eye damage over time. Causes blindness if left unchecked.",
+                thresholds: [
+                    { stat: "Resistance", value: 12, effect: "Eye damage is dealt faster and is harder to cure." },
+                    { stat: "Stealth", value: 4, effect: "The symptom remains hidden until active." }
+                ]
+            },
+            {
+                name: "Inorganic Biology", level: 5,
+                stealth: -1, resistance: 4, stage_speed: -2, transmission: 3,
+                description: "The virus becomes able to affect inorganic species, such as Golems or Plasmamen.",
+                thresholds: []
+            },
+            {
+                name: "Itching", level: 1,
+                stealth: 0, resistance: 3, stage_speed: 3, transmission: 1,
+                description: "Displays an annoying message. Should be used for buffing your disease. Can do slight brute damage if the stage speed threshold is met.",
+                thresholds: [
+                    { stat: "Transmission", value: 6, effect: "Increases frequency of itching." },
+                    { stat: "Stage Speed", value: 7, effect: "The host will scratch itself when itching, causing superficial damage." }
+                ]
+            },
+            {
+                name: "Metabolic Boost", level: 7,
+                stealth: -1, resistance: -2, stage_speed: 2, transmission: 1,
+                description: "Doubles the host's metabolism speed, making them process chems much faster than normal, but also increasing their hunger tenfold.",
+                thresholds: [
+                    { stat: "Stealth", value: 3, effect: "Reduces hunger rate." },
+                    { stat: "Stage Speed", value: 10, effect: "Chemical metabolization is tripled instead of doubled." }
+                ]
+            },
+            {
+                name: "Mind Restoration", level: 5,
+                stealth: -1, resistance: -2, stage_speed: 1, transmission: -3,
+                description: "The virus strengthens the bonds between neurons, reducing the duration of any ailment of the mind. Heals brain damage, and can cure mild and heavy traumas if upgraded.",
+                thresholds: [
+                    { stat: "Resistance", value: 6, effect: "Heals minor brain traumas." },
+                    { stat: "Resistance", value: 9, effect: "Heals severe brain traumas." },
+                    { stat: "Transmission", value: 8, effect: "Purges alcohol in the bloodstream." }
+                ]
+            },
+            {
+                name: "Narcolepsy", level: 6,
+                stealth: -1, resistance: -2, stage_speed: -3, transmission: 0,
+                description: "Makes the host drowsy and prone to falling asleep randomly.",
+                thresholds: [
+                    { stat: "Transmission", value: 4, effect: "Causes the host to periodically emit a yawn that tries to infect bystanders within 6 meters of the host." },
+                    { stat: "Stage Speed", value: 10, effect: "Causes narcolepsy more often, increasing the chance of the host falling asleep." }
+                ]
+            },
+            {
+                name: "Necrotic Metabolism", level: 5,
+                stealth: 2, resistance: -2, stage_speed: 1, transmission: 0,
+                description: "The virus becomes able to affect corpses and undead races, instead of lying dormant.",
+                thresholds: []
+            },
+            {
+                name: "Necrotizing Fasciitis", level: 6,
+                stealth: -3, resistance: -4, stage_speed: 0, transmission: -3,
+                description: "Causes brute damage over time. Fatal if left untreated.",
+                thresholds: [
+                    { stat: "Resistance", value: 7, effect: "Host will bleed profusely during necrosis." },
+                    { stat: "Transmission", value: 8, effect: "Causes extreme pain to the host, weakening it." }
+                ]
+            },
+            {
+                name: "Nocturnal Regeneration", level: 6,
+                stealth: 2, resistance: -1, stage_speed: -2, transmission: -1,
+                description: "Heals brute and burn damage if the host is not currently exposed to light. Heals brute damage more quickly than burn damage.",
+                thresholds: [
+                    { stat: "Stage Speed", value: 8, effect: "The effect is 2 times stronger. (Doubles healing speed.)" }
+                ]
+            },
+            {
+                name: "Plasma Fixation", level: 8,
+                stealth: 0, resistance: 3, stage_speed: -2, transmission: -2,
+                description: "The host absorbs plasma in the air, their lungs, and/or their bloodstream, using it to stabilize their temperature and heal brute, burn, and toxin damage.",
+                thresholds: [
+                    { stat: "Transmission", value: 6, effect: "Increases temperature adjustment rate x4." },
+                    { stat: "Stage Speed", value: 7, effect: "The effect is 2 times stronger. (Increases healing speed.)" }
+                ]
+            },
+            {
+                name: "Polyvitiligo", level: 5,
+                stealth: -1, resistance: 3, stage_speed: 1, transmission: 2,
+                description: "The virus replaces the melanin in the skin with reactive pigment, by adding random crayon powders (which won't actually recolor the host) and color powders (which WILL recolor the host) to the host.",
+                thresholds: []
+            },
+            {
+                name: "Radioactive Resonance", level: 6,
+                stealth: -1, resistance: -2, stage_speed: 0, transmission: -3,
+                description: "Heals brute, burn, and toxin damage while the host is irradiated. Higher radiation levels increase the healing speed.",
+                thresholds: [
+                    { stat: "Resistance", value: 7, effect: "The effect is 2 times stronger. (Increases healing speed.)" }
+                ]
+            },
+            {
+                name: "Regenerative Coma", level: 8,
+                stealth: 0, resistance: 2, stage_speed: -3, transmission: -2,
+                description: "Causes the host to fall into a death-like coma when heavy brute or burn damage is taken, then rapidly cures their wounds.",
+                thresholds: [
+                    { stat: "Stealth", value: 2, effect: "Host appears to die when falling into a coma." },
+                    { stat: "Resistance", value: 4, effect: "The virus also stabilizes the host while they are in critical condition." },
+                    { stat: "Stage Speed", value: 7, effect: "The effect is 1.5 times stronger. (Increases healing speed.)" }
+                ]
+            },
+            {
+                name: "Self-Respiration", level: 6,
+                stealth: 1, resistance: -3, stage_speed: -3, transmission: -4,
+                description: "Quickly heals oxygen damage, negating the need for air.",
+                thresholds: [
+                    { stat: "Resistance", value: 8, effect: "Additionally regenerates lost blood." }
+                ]
+            },
+            {
+                name: "Sensory Restoration", level: 4,
+                stealth: 0, resistance: 1, stage_speed: -2, transmission: 2,
+                description: "Restores mob's senses by fixing eye and ear damage.",
+                thresholds: []
+            },
+            {
+                name: "Sneezing", level: 1,
+                stealth: -2, resistance: 3, stage_speed: 0, transmission: 4,
+                description: "The virus causes irritation of the nasal cavity, making the host sneeze occasionally. Sneezes from this symptom will spread the virus in a 4 meter cone in front of the host.",
+                thresholds: [
+                    { stat: "Transmission", value: 9, effect: "Increases sneezing range, spreading the virus over 6 meter cone instead of over a 4 meter cone." },
+                    { stat: "Stealth", value: 4, effect: "The symptom remains hidden until active." },
+                    { stat: "Stage Speed", value: 17, effect: "The force of each sneeze catapults the host backwards, potentially stunning and lightly damaging them if they hit a wall or another person mid-flight." }
+                ]
+            },
+            {
+                name: "Spontaneous Combustion", level: 6,
+                stealth: -1, resistance: -4, stage_speed: -3, transmission: -4,
+                description: "Sets your body on fire periodically.",
+                thresholds: [
+                    { stat: "Stage Speed", value: 4, effect: "The effect is 1.5 times stronger. (Increases the intensity of the flames.)" },
+                    { stat: "Stage Speed", value: 8, effect: "The effect is 2 times stronger. (Further increases flame intensity.)" },
+                    { stat: "Transmission", value: 8, effect: "Host will spread the virus through skin flakes when bursting into flame." },
+                    { stat: "Stealth", value: 4, effect: "The symptom remains hidden until active." }
+                ]
+            },
+            {
+                name: "Starlight Condensation", level: 6,
+                stealth: -1, resistance: -2, stage_speed: 0, transmission: 1,
+                description: "Heals brute, burn, and toxin damage while exposed to starlight. Heals toxin more efficiently. Actually being in space intensifies the effect.",
+                thresholds: [
+                    { stat: "Stage Speed", value: 6, effect: "The effect is 2 times stronger. (Increases healing speed.)" },
+                    { stat: "Transmission", value: 6, effect: "Removes penalty for only being close to space." }
+                ]
+            },
+            {
+                name: "Thermoregulation", level: 5,
+                stealth: 0, resistance: 1, stage_speed: -2, transmission: -1,
+                description: "Constantly regulates body temperature.",
+                thresholds: [
+                    { stat: "Resistance", value: 8, effect: "The effect is 1.75 times stronger. (Increases thermal regulation speed.)" }
+                ]
+            },
+            {
+                name: "Tissue Hydration", level: 6,
+                stealth: 0, resistance: -1, stage_speed: 0, transmission: 1,
+                description: "Heals brute and burn damage if the host drank water recently, or if they're wet. Heals burn damage more efficiently.",
+                thresholds: [
+                    { stat: "Resistance", value: 5, effect: "Water is consumed at a much slower rate." },
+                    { stat: "Stage Speed", value: 7, effect: "The effect is 2 times stronger. (Increases healing speed.)" }
+                ]
+            },
+            {
+                name: "Toxolysis", level: 7,
+                stealth: 0, resistance: -2, stage_speed: 2, transmission: -2,
+                description: "Purges all chemicals at a fast rate from the bloodstream.",
+                thresholds: [
+                    { stat: "Resistance", value: 7, effect: "The effect is 2 times stronger. (Increases chem removal speed.)" },
+                    { stat: "Stage Speed", value: 6, effect: "Consumed chemicals nourish the host." }
+                ]
+            },
+            {
+                name: "Viral Evolutionary Acceleration", level: 3,
+                stealth: -2, resistance: -3, stage_speed: 5, transmission: 3,
+                description: "Massively buffs the evolutionary cycle of viruses, causing it to be faster acting, better at infecting, but more easily detected and cured.",
+                thresholds: []
+            },
+            {
+                name: "Viral Self-Adaptation", level: 3,
+                stealth: 3, resistance: 5, stage_speed: -3, transmission: 0,
+                description: "Massively buffs the adaptation of viruses, causing it to be stealthier, harder to cure but slower acting.",
+                thresholds: []
+            },
+            {
+                name: "Voice Change", level: 6,
+                stealth: -1, resistance: -2, stage_speed: -2, transmission: 2,
+                description: "Changes the voice of the affected mob. Causing confusion in communication. Available in Virus Crates.",
+                thresholds: [
+                    { stat: "Transmission", value: 14, effect: "The host's language center of the brain is damaged, leading to complete inability to speak or understand any language." },
+                    { stat: "Stage Speed", value: 7, effect: "Changes voice more often." },
+                    { stat: "Stealth", value: 3, effect: "The symptom remains hidden until active." }
+                ]
+            },
+            {
+                name: "Vomiting", level: 3,
+                stealth: -2, resistance: -1, stage_speed: -1, transmission: 2,
+                description: "Forces the affected mob to vomit! Makes the affected mob lose nutrition and heal toxin damage.",
+                thresholds: [
+                    { stat: "Resistance", value: 9, effect: "Host will vomit blood, causing internal damage." },
+                    { stat: "Transmission", value: 9, effect: "Host will projectile vomit, increasing vomiting range." },
+                    { stat: "Stealth", value: 4, effect: "The symptom remains hidden until active." }
+                ]
+            },
+            {
+                name: "Weight Loss", level: 3,
+                stealth: -2, resistance: 2, stage_speed: -2, transmission: -2,
+                description: "The virus mutates the host's metabolism, making it almost unable to gain nutrition from food.",
+                thresholds: [
+                    { stat: "Stealth", value: 4, effect: "The symptom is less noticeable." }
+                ]
+            }
+        ];
+
+        const MAX_SYMPTOMS = 6;
+        let selectedSymptoms = new Set();
+        let pinnedThresholds = new Set();
+        let searchQuery = '';
+        
+        // Multi-column sorting state
+        let activeSortStats = new Set();
+        let sortDesc = false;
+
+        const statKeys = {
+            'Stealth': 'stealth',
+            'Resistance': 'resistance',
+            'Stage Speed': 'stage_speed',
+            'Transmission': 'transmission'
+        };
+
+        const chemicalRecipes = {
+            "Unstable Mutagen": "1 part Chlorine<br>1 part Phosphorus<br>1 part Radium",
+            "Virus Rations": "1 part Virus Food<br>1 part Synaptizine",
+            "Virus Food": "5 parts Water<br>5 parts Milk",
+            "Mutagenic Agar": "1 part Unstable Mutagen<br>1 part Virus Food",
+            "Sucrose Agar": "1 part Mutagenic Agar<br>1 part Sugar OR Saline-Glucose",
+            "Weakened Virus Plasma": "1 part Virus Plasma<br>1 part Synaptizine",
+            "Virus Plasma": "1 part Virus Food<br>1 part Plasma",
+            "Decaying Uranium Gel": "1 part Virus Food<br>1 part Uranium",
+            "Unstable Uranium Gel": "1 part Virus Plasma<br>5 parts Uranium",
+            "Stable Uranium Gel": "1 part Plasma<br>10 parts Uranium<br>10 parts Silver OR Gold",
+            "Plasma": "Base Chemical"
+        };
+
+        function getChemicalsForLevel(lvl) {
+            switch(lvl) {
+                case 8: return ["Stable Uranium Gel"];
+                case 7: return ["Decaying Uranium Gel", "Unstable Uranium Gel"];
+                case 6: return ["Plasma", "Decaying Uranium Gel", "Virus Plasma"];
+                case 5: return ["Plasma", "Weakened Virus Plasma"];
+                case 4: return ["Unstable Mutagen", "Sucrose Agar"];
+                case 3: return ["Unstable Mutagen", "Mutagenic Agar"];
+                case 2: return ["Unstable Mutagen", "Virus Food"];
+                case 1: return ["Virus Food", "Virus Rations"];
+                default: return [];
+            }
+        }
+
+        function chemColor(lvl) {
+            if(lvl <= 2) return "#10b981"; // success green
+            if(lvl <= 4) return "#38bdf8"; // accent blue
+            if(lvl <= 6) return "#a855f7"; // purple
+            return "#f43f5e"; // danger red
+        }
+
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('chem-tier-menu');
+            const btn = document.querySelector('.chem-tier-btn');
+            if (menu && menu.classList.contains('show') && event.target !== btn && !menu.contains(event.target)) {
+                menu.classList.remove('show');
+            }
+        });
+
+        // Close modal on ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeStrainModal();
+            }
+        });
+
+        const placeholders = [
+            'Name your cute little war crime...',
+            'Your adorable space sniffles...',
+            'Just a little cough, right? Name it...'
+        ];
+
+        function openSaveModal() {
+            document.getElementById('strain-modal').style.display = 'flex';
+            document.getElementById('modal-warning').style.display = 'none';
+            document.getElementById('modal-strain-name').placeholder = placeholders[Math.floor(Math.random() * placeholders.length)];
+            autoUpdateStrainText();
+        }
+
+        function closeStrainModal() {
+            document.getElementById('strain-modal').style.display = 'none';
+        }
+
+        function autoUpdateStrainText() {
+            const name = document.getElementById('modal-strain-name').value.trim();
+            const textarea = document.getElementById('modal-strain-text');
+            
+            // To simplify, if the name is not empty, we override the textarea
+            if (name) {
+                let text = name + '\n';
+                selectedSymptoms.forEach(sym => {
+                    text += sym + '\n';
+                });
+                textarea.value = text.trim();
+                document.getElementById('modal-warning').style.display = 'none';
+            } else if (selectedSymptoms.size > 0) {
+                let text = '';
+                selectedSymptoms.forEach(sym => {
+                    text += sym + '\n';
+                });
+                textarea.value = text.trim();
+            } else {
+                textarea.value = '';
+            }
+        }
+
+        function copyStrainText(btn) {
+            const name = document.getElementById('modal-strain-name').value.trim();
+            const textarea = document.getElementById('modal-strain-text');
+            
+            if (!name && textarea.value.trim() !== '') {
+                // Warning if trying to copy without name
+                const warning = document.getElementById('modal-warning');
+                warning.innerText = "You forgot to name your abomination!";
+                warning.style.display = 'block';
+                return;
+            }
+            
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ Copied!';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                }, 2000);
+            });
+        }
+
+        function loadStrainFromText() {
+            const text = document.getElementById('modal-strain-text').value.trim();
+            if (!text) return;
+            
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            if (lines.length === 0) return;
+            
+            let possibleName = lines[0];
+            let startIndex = 1;
+            
+            // Check if the first line is actually a symptom
+            const isFirstLineSymptom = symptomsData.some(s => s.name.toLowerCase() === possibleName.toLowerCase());
+            if (isFirstLineSymptom) {
+                possibleName = "";
+                startIndex = 0;
+            }
+            
+            if (possibleName) {
+                document.getElementById('modal-strain-name').value = possibleName;
+                document.getElementById('modal-warning').style.display = 'none';
+            }
+            
+            selectedSymptoms.clear();
+            for (let i = startIndex; i < lines.length; i++) {
+                const symName = lines[i];
+                const exists = symptomsData.find(s => s.name.toLowerCase() === symName.toLowerCase());
+                if (exists) {
+                    selectedSymptoms.add(exists.name);
+                }
+            }
+            
+            renderTable();
+            updateRightPanel();
+            closeStrainModal();
+        }
+
+        function clearModalText() {
+            document.getElementById('modal-strain-name').value = '';
+            document.getElementById('modal-strain-text').value = '';
+            document.getElementById('modal-warning').style.display = 'none';
+        }
+
+        function clearAllSymptoms() {
+            selectedSymptoms.clear();
+            renderTable();
+            updateRightPanel();
+        }
+
+        function init() {
+            console.log('Stop looking at my source code and go make a cure!');
+            
+            try {
+                const savedSym = localStorage.getItem('virology_selected');
+                if (savedSym) JSON.parse(savedSym).forEach(s => selectedSymptoms.add(s));
+                
+                const savedPin = localStorage.getItem('virology_pinned');
+                if (savedPin) JSON.parse(savedPin).forEach(p => pinnedThresholds.add(p));
+            } catch(e) {}
+            
+            renderTable();
+            updateRightPanel();
+        }
+
+        function handleSearch(e) {
+            searchQuery = e.target.value.toLowerCase();
+            renderTable();
+        }
+
+        function sortTable(column) {
+            // Handle exclusive sort columns: name, level
+            if (column === 'name' || column === 'level') {
+                if (activeSortStats.size === 1 && activeSortStats.has(column)) {
+                    sortDesc = !sortDesc;
+                } else {
+                    activeSortStats.clear();
+                    activeSortStats.add(column);
+                    sortDesc = (column === 'level') ? true : false; 
+                }
+            } else {
+                // Handle stat sorting (additive)
+                if (activeSortStats.has('name') || activeSortStats.has('level')) {
+                    activeSortStats.clear();
+                }
+
+                if (activeSortStats.size === 1 && activeSortStats.has(column)) {
+                    sortDesc = !sortDesc; // Toggle asc/desc if it's the only active sort column
+                } else if (activeSortStats.has(column)) {
+                    activeSortStats.delete(column); // Remove from combo sum
+                    sortDesc = true; 
+                } else {
+                    activeSortStats.add(column); // Add to combo sum
+                    sortDesc = true;
+                }
+            }
+            renderTable();
+        }
+
+        function handleCheck(name) {
+            if (selectedSymptoms.has(name)) {
+                selectedSymptoms.delete(name);
+            } else {
+                if (selectedSymptoms.size >= MAX_SYMPTOMS) {
+                    return; // Prevent clicking unselected row when maxed out
+                }
+                selectedSymptoms.add(name);
+            }
+            renderTable();
+            updateRightPanel();
+        }
+
+        function togglePin(symptomName, stat, value) {
+            const key = symptomName + '|' + stat + '|' + value;
+            if (pinnedThresholds.has(key)) {
+                pinnedThresholds.delete(key);
+            } else {
+                pinnedThresholds.add(key);
+            }
+            updateRightPanel();
+        }
+
+        function formatStat(val) {
+            if (val > 0) return `<span class="stat-positive">+${val}</span>`;
+            if (val < 0) return `<span class="stat-negative">${val}</span>`;
+            return `<span class="stat-neutral">0</span>`;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('symptoms-body');
+            tbody.innerHTML = '';
+
+            // Update Sort Indicators & Headers
+            document.querySelectorAll('th').forEach(th => th.classList.remove('sort-active'));
+            document.querySelectorAll('.sort-indicator').forEach(el => el.innerHTML = '');
+
+            if (activeSortStats.size === 0 || activeSortStats.has('name')) {
+                const th = document.querySelector(`th[onclick="sortTable('name')"]`);
+                if(th) th.classList.add('sort-active');
+                const ind = document.getElementById('sort-name');
+                if(ind) ind.innerHTML = sortDesc ? '▼' : '▲';
+            } else if (activeSortStats.has('level')) {
+                const th = document.querySelector(`th[onclick="sortTable('level')"]`);
+                if(th) th.classList.add('sort-active');
+                const ind = document.getElementById('sort-level');
+                if(ind) ind.innerHTML = sortDesc ? '▼' : '▲';
+            } else {
+                activeSortStats.forEach(stat => {
+                    const th = document.querySelector(`th[onclick="sortTable('${stat}')"]`);
+                    if(th) th.classList.add('sort-active');
+                    const ind = document.getElementById(`sort-${stat}`);
+                    if(ind) {
+                        ind.innerHTML = activeSortStats.size === 1 ? (sortDesc ? '▼' : '▲') : '∑ ▼';
+                    }
+                });
+            }
+
+            // Filter data based on search
+            const filteredData = symptomsData.filter(sym => {
+                const isSelected = selectedSymptoms.has(sym.name);
+                if (isSelected) return true; // always show selected items
+                return sym.name.toLowerCase().includes(searchQuery);
+            });
+
+            // Sort data with selected items pinned to the top
+            const sortedData = [...filteredData].sort((a, b) => {
+                const aSelected = selectedSymptoms.has(a.name);
+                const bSelected = selectedSymptoms.has(b.name);
+                
+                // Pin selected symptoms to the top
+                if (aSelected && !bSelected) return -1;
+                if (!aSelected && bSelected) return 1;
+
+                // Sort the remaining items based on user's column choice
+                if (activeSortStats.has('name')) {
+                    return sortDesc ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
+                } else if (activeSortStats.has('level')) {
+                    if (a.level === b.level) return a.name.localeCompare(b.name);
+                    return sortDesc ? b.level - a.level : a.level - b.level;
+                } else if (activeSortStats.size === 0) {
+                    return a.name.localeCompare(b.name); // Default fallback
+                } else {
+                    let sumA = 0;
+                    let sumB = 0;
+                    activeSortStats.forEach(stat => {
+                        sumA += a[stat];
+                        sumB += b[stat];
+                    });
+                    
+                    if (sumA === sumB) {
+                        return a.name.localeCompare(b.name);
+                    }
+                    
+                    return sortDesc ? (sumB - sumA) : (sumA - sumB);
+                }
+            });
+
+            const isMaxed = selectedSymptoms.size >= MAX_SYMPTOMS;
+
+            // Highlight active sort columns
+            const activeClass = (stat) => activeSortStats.has(stat) ? 'active-sort-col' : '';
+
+            let hasUnselected = false;
+
+            sortedData.forEach(sym => {
+                const isSelected = selectedSymptoms.has(sym.name);
+                if (!isSelected) hasUnselected = true;
+                const isDisabled = isMaxed && !isSelected;
+                
+                const tr = document.createElement('tr');
+                if (isSelected) tr.className = 'selected';
+                if (isDisabled) tr.classList.add('disabled');
+                
+                // Allow the entire row to be clickable
+                tr.setAttribute('onclick', `handleCheck('${sym.name.replace(/'/g, "\\'")}')`);
+
+                const chemList = getChemicalsForLevel(sym.level);
+                const chemHtml = chemList.map(chem => {
+                    const recipe = chemicalRecipes[chem];
+                    if (recipe) {
+                        return `<span class="chem-tooltip-wrap" onclick="event.stopPropagation()">${chem}<div class="chem-tooltip-text">${recipe}</div></span>`;
+                    }
+                    return `<span>${chem}</span>`;
+                }).join('<br>');
+
+                tr.innerHTML = `
+                    <td class="checkbox-cell">
+                        <input type="checkbox" class="custom-checkbox" 
+                            ${isSelected ? 'checked' : ''} 
+                            ${isDisabled ? 'disabled' : ''}
+                        >
+                    </td>
+                    <td class="symptom-name-cell">
+                        ${sym.name}
+                        <div class="tooltip-wrap" onclick="event.stopPropagation()">
+                            <div class="tooltip-icon">?</div>
+                            <div class="tooltip-text">${sym.description}</div>
+                        </div>
+                    </td>
+                    <td style="text-align:center;" class="stat-cell ${activeClass('level')}">
+                        <div style="font-weight: 700; color: #e2e8f0; font-size: 14px;">${sym.level}</div>
+                        <div style="font-size: 9px; color: ${chemColor(sym.level)}; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; font-family: 'Inter', sans-serif; line-height: 1.4;">
+                            ${chemHtml}
+                        </div>
+                    </td>
+                    <td style="text-align:center;" class="stat-cell ${activeClass('stealth')}">${formatStat(sym.stealth)}</td>
+                    <td style="text-align:center;" class="stat-cell ${activeClass('resistance')}">${formatStat(sym.resistance)}</td>
+                    <td style="text-align:center;" class="stat-cell ${activeClass('stage_speed')}">${formatStat(sym.stage_speed)}</td>
+                    <td style="text-align:center;" class="stat-cell ${activeClass('transmission')}">${formatStat(sym.transmission)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if (!hasUnselected && searchQuery.trim() !== '') {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted); font-style: italic; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+                        Not even the CMO knows what you're typing...
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            // Easter egg texts
+            const easterEgg = document.getElementById('easter-egg-text');
+            if (easterEgg) {
+                if (activeSortStats.size === 4 && sortDesc) {
+                    easterEgg.innerText = 'The reason medical got plasma-flooded';
+                    easterEgg.style.display = 'inline';
+                } else if (activeSortStats.size === 1 && activeSortStats.has('resistance') && sortDesc) {
+                    easterEgg.innerText = "Even CMO can't cure this";
+                    easterEgg.style.display = 'inline';
+                } else if (activeSortStats.size === 2 && activeSortStats.has('stealth') && activeSortStats.has('stage_speed') && sortDesc) {
+                    easterEgg.innerText = 'Who are we trying to imitate, the space ninja?';
+                    easterEgg.style.display = 'inline';
+                } else {
+                    easterEgg.style.display = 'none';
+                }
+            }
+        }
+
+        function updateStatDisplay(elementId, value) {
+            const el = document.getElementById(elementId);
+            el.innerText = value > 0 ? `+${value}` : value;
+            el.className = 'stat-value ' + (value > 0 ? 'positive' : (value < 0 ? 'negative' : 'neutral'));
+        }
+
+        function updateRightPanel() {
+            let totalStats = { stealth: 0, resistance: 0, stage_speed: 0, transmission: 0 };
+            let activeThresholds = [];
+
+            selectedSymptoms.forEach(name => {
+                const sym = symptomsData.find(s => s.name === name);
+                totalStats.stealth += sym.stealth;
+                totalStats.resistance += sym.resistance;
+                totalStats.stage_speed += sym.stage_speed;
+                totalStats.transmission += sym.transmission;
+
+                sym.thresholds.forEach(th => {
+                    activeThresholds.push({ symptomName: sym.name, ...th });
+                });
+            });
+
+            updateStatDisplay('stat-stealth', totalStats.stealth);
+            updateStatDisplay('stat-resistance', totalStats.resistance);
+            updateStatDisplay('stat-stagespeed', totalStats.stage_speed);
+            updateStatDisplay('stat-transmission', totalStats.transmission);
+
+            document.getElementById('selected-count').innerText = `${selectedSymptoms.size} / 6 Selected`;
+
+            const thContainer = document.getElementById('thresholds-container');
+            thContainer.innerHTML = '';
+
+            if (activeThresholds.length === 0) {
+                if (selectedSymptoms.size === 0) {
+                    thContainer.innerHTML = '<div class="empty-state">Select symptoms to view their thresholds.</div>';
+                } else {
+                    thContainer.innerHTML = '<div class="empty-state">The selected symptoms have no specific threshold effects.</div>';
+                }
+                return;
+            }
+
+            // Sort thresholds: Pinned first, then Met, then Unmet
+            activeThresholds.sort((a, b) => {
+                const keyA = a.symptomName + '|' + a.stat + '|' + a.value;
+                const keyB = b.symptomName + '|' + b.stat + '|' + b.value;
+                const pinA = pinnedThresholds.has(keyA) ? 1 : 0;
+                const pinB = pinnedThresholds.has(keyB) ? 1 : 0;
+                
+                if (pinA !== pinB) return pinB - pinA; // Pinned first
+                
+                const currentValA = totalStats[statKeys[a.stat]];
+                const isMetA = currentValA >= a.value ? 1 : 0;
+                
+                const currentValB = totalStats[statKeys[b.stat]];
+                const isMetB = currentValB >= b.value ? 1 : 0;
+                
+                if (isMetA !== isMetB) return isMetB - isMetA; // Met first
+                
+                return a.symptomName.localeCompare(b.symptomName);
+            });
+
+            activeThresholds.forEach(th => {
+                const currentVal = totalStats[statKeys[th.stat]];
+                const isMet = currentVal >= th.value;
+                const key = th.symptomName + '|' + th.stat + '|' + th.value;
+                const isPinned = pinnedThresholds.has(key);
+                
+                // Calculate progress % (clamp between 0 and 100)
+                let progressPercent = 0;
+                if (th.value > 0) {
+                    progressPercent = Math.min(100, Math.max(0, (currentVal / th.value) * 100));
+                }
+
+                const card = document.createElement('div');
+                card.className = `threshold-card ${isMet ? 'met' : 'unmet'}`;
+                
+                const iconHtml = isMet 
+                    ? `<span class="threshold-icon">✓</span>` 
+                    : `<span class="threshold-icon" style="color:#64748b">○</span>`;
+
+                const lockIcon = isPinned ? 
+                    `<svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><path d="M12 2C9.243 2 7 4.243 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.757-2.243-5-5-5zm4 10v8H8v-8h8zm-4-8c1.654 0 3 1.346 3 3v3H9V7c0-1.654 1.346-3 3-3z"/></svg>` 
+                    : 
+                    `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2C9.243 2 7 4.243 7 7v1H9V7c0-1.654 1.346-3 3-3s3 1.346 3 3v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1v-2c0-2.757-2.243-5-5-5zm6 10v8H6v-8h12z"/></svg>`;
+
+                const pinBtn = `<button class="pin-btn ${isPinned ? 'active' : ''}" onclick="togglePin('${th.symptomName.replace(/'/g, "\\'")}', '${th.stat}', ${th.value}); event.stopPropagation();" title="Pin Threshold">${lockIcon}</button>`;
+
+                card.innerHTML = `
+                    <div class="threshold-header">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            ${pinBtn}
+                            <span class="threshold-title">${th.symptomName}</span>
+                        </div>
+                        <span class="threshold-req">${th.stat}: ${currentVal} / ${th.value}</span>
+                    </div>
+                    <div class="threshold-effect">
+                        ${iconHtml}
+                        <span class="threshold-text">${th.effect}</span>
+                    </div>
+                    <div class="threshold-progress-bg">
+                        <div class="threshold-bar" style="width: ${progressPercent}%;"></div>
+                    </div>
+                `;
+                
+                thContainer.appendChild(card);
+            });
+
+            try {
+                localStorage.setItem('virology_selected', JSON.stringify(Array.from(selectedSymptoms)));
+                localStorage.setItem('virology_pinned', JSON.stringify(Array.from(pinnedThresholds)));
+            } catch(e) {}
+        }
+
+        init();
+    </script>
+
+    <!-- Save/Load Modal -->
+    <div id="strain-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center;">
+        <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid var(--panel-border); border-radius: 12px; width: 400px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 16px; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px;">Save / Load Virus</h3>
+                <button onclick="closeStrainModal()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;">&times;</button>
+            </div>
+            
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+                Type a name to auto-generate your virus list, or paste an existing virus list below and click "Load".
+            </p>
+            
+            <div style="position: relative; margin-bottom: 12px;">
+                <input type="text" id="modal-strain-name" oninput="autoUpdateStrainText()" placeholder="Name your cute little war crime..." style="width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid var(--panel-border); border-radius: 6px; color: #fff; outline: none; font-family: 'Inter', sans-serif;">
+            </div>
+            
+            <textarea id="modal-strain-text" rows="8" placeholder="Paste a virus list here..." style="width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid var(--panel-border); border-radius: 6px; color: var(--accent); outline: none; resize: none; font-family: 'JetBrains Mono', monospace; font-size: 12px;"></textarea>
+            
+            <div id="modal-warning" style="display: none; color: var(--danger); font-size: 12px; margin-top: 8px; font-weight: 500;"></div>
+            
+            <div style="display: flex; gap: 8px; margin-top: 12px;">
+                <button class="action-btn" style="flex: 1; background: rgba(16, 185, 129, 0.15); color: var(--success);" onclick="copyStrainText(this)">📋 Copy</button>
+                <button class="action-btn" style="flex: 1; background: rgba(56, 189, 248, 0.15); color: var(--accent);" onclick="loadStrainFromText()">📥 Load</button>
+                <button class="action-btn" style="flex: 1; background: rgba(244, 63, 94, 0.15); color: var(--danger);" onclick="clearModalText()">🗑️ Clear</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
