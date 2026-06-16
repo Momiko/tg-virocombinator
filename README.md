@@ -1,7 +1,9 @@
 # SS13 Virology Combinator
 
 A clean, modern, and client-side web tool designed for Space Station 13 (/tg/station codebase) virologists. 
+
 Easily calculate virus stats, discover mutagen thresholds, and save your custom virus recipes locally.
+
 Inspired by [Michael-Ashfield](https://github.com/Michael-Ashfield/tg-Virology-tool) – thank you for helping the spessimen for the past 6 years! Your soul belongs to space now o7
 
 ### 🌐 [Try it here!](https://momiko.github.io/tg-virocombinator/)
