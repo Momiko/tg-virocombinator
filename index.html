@@ -796,8 +796,11 @@
                 <table id="symptoms-table">
                     <thead>
                         <tr>
-                            <th style="width: 50px; text-align: center; padding: 10px 0;">
-                                <button onclick="clearAllSymptoms(); event.stopPropagation();" style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 4px; padding: 4px; cursor: pointer; color: var(--danger); font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='rgba(244, 63, 94, 0.2)'" onmouseout="this.style.background='rgba(244, 63, 94, 0.1)'" title="Clear All Selected">🗑️</button>
+                            <th style="width: 80px; text-align: center; padding: 10px 0;">
+                                <div style="display: flex; gap: 4px; justify-content: center;">
+                                    <button onclick="clearAllSymptoms(); event.stopPropagation();" style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 4px; padding: 4px; cursor: pointer; color: var(--danger); font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='rgba(244, 63, 94, 0.2)'" onmouseout="this.style.background='rgba(244, 63, 94, 0.1)'" title="Clear All Selected">🗑️</button>
+                                    <button onclick="randomizeSymptoms(); event.stopPropagation();" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; padding: 4px; cursor: pointer; color: var(--accent); font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='rgba(56, 189, 248, 0.2)'" onmouseout="this.style.background='rgba(56, 189, 248, 0.1)'" title="Randomize 6 Symptoms">🎲</button>
+                                </div>
                             </th>
                             <th onclick="sortTable('name')" style="padding: 10px 12px; min-width: 200px;">
                                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -852,6 +855,10 @@
 
             <div class="section-title" style="margin-top: 10px;">
                 Active Thresholds
+                <div id="medhud-container" style="display: none; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--panel-border);">
+                    <img id="medhud-icon" src="icons/hudill0.png" style="width: 24px; height: 24px; image-rendering: pixelated;" alt="MedHUD">
+                    <span id="medhud-label">Harmless</span>
+                </div>
             </div>
 
             <div class="thresholds-container" id="thresholds-container">
@@ -879,7 +886,7 @@
     <script>
         const symptomsData = [
             {
-                name: "Acute Respiratory Distress Syndrome", level: 7,
+                name: "Acute Respiratory Distress Syndrome", level: 7,                severity: 6,
                 stealth: -2, resistance: 0, stage_speed: -1, transmission: -2,
                 description: "Causes heavy suffocation damage. Becomes even more lethal if the mob has more than 120 suffocation damage.",
                 thresholds: [
@@ -888,7 +895,7 @@
                 ]
             },
             {
-                name: "Alkali Perspiration", level: 7,
+                name: "Alkali Perspiration", level: 7,                severity: 6,
                 stealth: 2, resistance: -2, stage_speed: -2, transmission: -2,
                 description: "Causes the affected mob to burst into flames periodically, while also giving them small doses of Napalm and Chlorine Trifluoride. If wet when bursting into flames, the victims will also explode.",
                 thresholds: [
@@ -898,14 +905,14 @@
                 ]
             },
             {
-                name: "Alopecia", level: 4,
+                name: "Alopecia", level: 4,                severity: 1,
                 stealth: 0, resistance: 1, stage_speed: 2, transmission: 2,
                 description: "Causes rapid hair loss.",
                 thresholds: []
             },
             {
-                name: "Anticoagulant", level: 7,
-                stealth: 1, resistance: 0, stage_speed: -2, transmission: -2,
+                name: "Anticoagulant", level: 7,                severity: 3,
+                stealth: 1, resistance: -1, stage_speed: -3, transmission: 0,
                 description: "Causes bleeding wounds on the mob to get worse every tick. Can also increase their susceptibility to receiving bleeding wounds.",
                 thresholds: [
                     { stat: "Stage Speed", value: 9, effect: "Bleeding is significantly worsened." },
@@ -913,7 +920,7 @@
                 ]
             },
             {
-                name: "Autophagocytosis Necrosis", level: 7,
+                name: "Autophagocytosis Necrosis", level: 7,                severity: 6,
                 stealth: -2, resistance: -2, stage_speed: 1, transmission: -2,
                 description: "Causes the mob's cells to decay rapidly, causing brute damage, constant bleeding and elevated hunger.",
                 thresholds: [
@@ -922,8 +929,8 @@
                 ]
             },
             {
-                name: "Chills", level: 2,
-                stealth: 0, resistance: 2, stage_speed: 3, transmission: 2,
+                name: "Chills", level: 2,                severity: 2,
+                stealth: 1, resistance: 2, stage_speed: 3, transmission: 2,
                 description: "Cools down your body. Won't reach damaging levels unless thresholds are met.",
                 thresholds: [
                     { stat: "Stage Speed", value: 5, effect: "The effect is 1.5 times stronger. (Increases the intensity of the cooling; the host can fall below safe temperature levels.)" },
@@ -931,8 +938,8 @@
                 ]
             },
             {
-                name: "Choking", level: 3,
-                stealth: -3, resistance: -2, stage_speed: -2, transmission: -2,
+                name: "Choking", level: 3,                severity: 3,
+                stealth: -1, resistance: 0, stage_speed: -1, transmission: -1,
                 description: "Causes spikes of oxygen deprivation. Deals damage based on stage speed and stealth.",
                 thresholds: [
                     { stat: "Stage Speed", value: 8, effect: "Causes choking more frequently." },
@@ -940,8 +947,8 @@
                 ]
             },
             {
-                name: "Confusion", level: 4,
-                stealth: 1, resistance: -1, stage_speed: -3, transmission: 0,
+                name: "Confusion", level: 4,                severity: 2,
+                stealth: 2, resistance: 1, stage_speed: 1, transmission: 2,
                 description: "Makes the affected mob be confused for short periods of time, making them walk in random directions.",
                 thresholds: [
                     { stat: "Resistance", value: 6, effect: "Causes brain damage over time." },
@@ -950,7 +957,7 @@
                 ]
             },
             {
-                name: "Coughing", level: 1,
+                name: "Cough", level: 1,                severity: 0,
                 stealth: -1, resistance: 3, stage_speed: 1, transmission: 2,
                 description: "The virus irritates the throat of the host, causing occasional coughing. Each cough will try to infect bystanders who are within 1 tile of the host with the virus.",
                 thresholds: [
@@ -962,8 +969,8 @@
                 ]
             },
             {
-                name: "Deafness", level: 4,
-                stealth: -1, resistance: -2, stage_speed: -1, transmission: -3,
+                name: "Deafness", level: 4,                severity: 4,
+                stealth: 0, resistance: 1, stage_speed: 1, transmission: -2,
                 description: "Causes intermittent loss of hearing.",
                 thresholds: [
                     { stat: "Resistance", value: 9, effect: "Causes permanent deafness, instead of intermittent." },
@@ -971,14 +978,14 @@
                 ]
             },
             {
-                name: "Disfiguration", level: 5,
+                name: "Disfiguration", level: 5,                severity: 1,
                 stealth: 2, resistance: 0, stage_speed: 3, transmission: 1,
                 description: "Causes the host's face to crumble and cave in, disfiguring the host to appear as unknown to others until cured.",
                 thresholds: []
             },
             {
-                name: "Dizziness", level: 4,
-                stealth: 0, resistance: -2, stage_speed: -3, transmission: -1,
+                name: "Dizziness", level: 4,                severity: 2,
+                stealth: 1, resistance: 0, stage_speed: -2, transmission: -1,
                 description: "Shakes the affected mob's screen.",
                 thresholds: [
                     { stat: "Transmission", value: 6, effect: "The effect is 2 times stronger. (Also causes druggy vision.)" },
@@ -986,7 +993,7 @@
                 ]
             },
             {
-                name: "Dormant DNA Activator", level: 6,
+                name: "Dormant DNA Activator", level: 6,                severity: 4,
                 stealth: -2, resistance: -3, stage_speed: 0, transmission: -3,
                 description: "The virus bonds with the DNA of the host, activating random dormant mutations within their DNA. When the virus is cured, the host's genetic alterations are undone.",
                 thresholds: [
@@ -997,19 +1004,19 @@
                 ]
             },
             {
-                name: "Eternal Youth", level: 5,
+                name: "Eternal Youth", level: 5,                severity: 0,
                 stealth: 3, resistance: 4, stage_speed: 4, transmission: -4,
                 description: "Makes you never physically older than young adulthood and prevents death by old age. Should be used for buffing your disease.",
                 thresholds: []
             },
             {
-                name: "Facial Hypertrichosis", level: 4,
+                name: "Facial Hypertrichosis", level: 4,                severity: 1,
                 stealth: 0, resistance: 3, stage_speed: 2, transmission: 1,
                 description: "Makes you grow a massive beard, regardless of gender.",
                 thresholds: []
             },
             {
-                name: "Fever", level: 2,
+                name: "Fever", level: 2,                severity: 2,
                 stealth: 0, resistance: 3, stage_speed: 3, transmission: 2,
                 description: "Heats up your body. Will not reach damaging levels of heat unless resistance thresholds are met.",
                 thresholds: [
@@ -1018,8 +1025,8 @@
                 ]
             },
             {
-                name: "Hallucigen", level: 5,
-                stealth: 1, resistance: -4, stage_speed: 1, transmission: -1,
+                name: "Hallucigen", level: 5,                severity: 2,
+                stealth: 1, resistance: -2, stage_speed: 2, transmission: -1,
                 description: "Makes the affected mob have hallucinations for short periods of time. Available in Virus Crates.",
                 thresholds: [
                     { stat: "Stage Speed", value: 7, effect: "The effect is 2 times stronger. (Increases the amount of hallucinations.)" },
@@ -1027,7 +1034,7 @@
                 ]
             },
             {
-                name: "Headache", level: 1,
+                name: "Headache", level: 1,                severity: 1,
                 stealth: -1, resistance: 4, stage_speed: 2, transmission: 0,
                 description: "Displays an annoying message! Should be used for buffing your disease.",
                 thresholds: [
@@ -1037,8 +1044,8 @@
                 ]
             },
             {
-                name: "Hyphema", level: 5,
-                stealth: -1, resistance: -4, stage_speed: -4, transmission: -3,
+                name: "Hyphema", level: 5,                severity: 5,
+                stealth: 0, resistance: -2, stage_speed: -3, transmission: -2,
                 description: "Inflicts eye damage over time. Causes blindness if left unchecked.",
                 thresholds: [
                     { stat: "Resistance", value: 12, effect: "Eye damage is dealt faster and is harder to cure." },
@@ -1046,13 +1053,13 @@
                 ]
             },
             {
-                name: "Inorganic Biology", level: 5,
+                name: "Inorganic Biology", level: 5,                severity: 0,
                 stealth: -1, resistance: 4, stage_speed: -2, transmission: 3,
                 description: "The virus becomes able to affect inorganic species, such as Golems or Plasmamen.",
                 thresholds: []
             },
             {
-                name: "Itching", level: 1,
+                name: "Itching", level: 1,                severity: 1,
                 stealth: 0, resistance: 3, stage_speed: 3, transmission: 1,
                 description: "Displays an annoying message. Should be used for buffing your disease. Can do slight brute damage if the stage speed threshold is met.",
                 thresholds: [
@@ -1061,7 +1068,7 @@
                 ]
             },
             {
-                name: "Metabolic Boost", level: 7,
+                name: "Metabolic Boost", level: 7,                severity: 0,
                 stealth: -1, resistance: -2, stage_speed: 2, transmission: 1,
                 description: "Doubles the host's metabolism speed, making them process chems much faster than normal, but also increasing their hunger tenfold.",
                 thresholds: [
@@ -1070,7 +1077,7 @@
                 ]
             },
             {
-                name: "Mind Restoration", level: 5,
+                name: "Mind Restoration", level: 5,                severity: 0,
                 stealth: -1, resistance: -2, stage_speed: 1, transmission: -3,
                 description: "The virus strengthens the bonds between neurons, reducing the duration of any ailment of the mind. Heals brain damage, and can cure mild and heavy traumas if upgraded.",
                 thresholds: [
@@ -1080,8 +1087,8 @@
                 ]
             },
             {
-                name: "Narcolepsy", level: 6,
-                stealth: -1, resistance: -2, stage_speed: -3, transmission: 0,
+                name: "Narcolepsy", level: 6,                severity: 4,
+                stealth: -1, resistance: -2, stage_speed: -2, transmission: 0,
                 description: "Makes the host drowsy and prone to falling asleep randomly.",
                 thresholds: [
                     { stat: "Transmission", value: 4, effect: "Causes the host to periodically emit a yawn that tries to infect bystanders within 6 meters of the host." },
@@ -1089,14 +1096,14 @@
                 ]
             },
             {
-                name: "Necrotic Metabolism", level: 5,
+                name: "Necrotic Metabolism", level: 5,                severity: 0,
                 stealth: 2, resistance: -2, stage_speed: 1, transmission: 0,
                 description: "The virus becomes able to affect corpses and undead races, instead of lying dormant.",
                 thresholds: []
             },
             {
-                name: "Necrotizing Fasciitis", level: 6,
-                stealth: -3, resistance: -4, stage_speed: 0, transmission: -3,
+                name: "Necrotizing Fasciitis", level: 6,                severity: 5,
+                stealth: -2, resistance: -1, stage_speed: 0, transmission: -1,
                 description: "Causes brute damage over time. Fatal if left untreated.",
                 thresholds: [
                     { stat: "Resistance", value: 7, effect: "Host will bleed profusely during necrosis." },
@@ -1104,7 +1111,7 @@
                 ]
             },
             {
-                name: "Nocturnal Regeneration", level: 6,
+                name: "Nocturnal Regeneration", level: 6,                severity: 0,
                 stealth: 2, resistance: -1, stage_speed: -2, transmission: -1,
                 description: "Heals brute and burn damage if the host is not currently exposed to light. Heals brute damage more quickly than burn damage.",
                 thresholds: [
@@ -1112,7 +1119,7 @@
                 ]
             },
             {
-                name: "Plasma Fixation", level: 8,
+                name: "Plasma Fixation", level: 8,                severity: 0,
                 stealth: 0, resistance: 3, stage_speed: -2, transmission: -2,
                 description: "The host absorbs plasma in the air, their lungs, and/or their bloodstream, using it to stabilize their temperature and heal brute, burn, and toxin damage.",
                 thresholds: [
@@ -1121,21 +1128,21 @@
                 ]
             },
             {
-                name: "Polyvitiligo", level: 5,
+                name: "Polyvitiligo", level: 5,                severity: 1,
                 stealth: -1, resistance: 3, stage_speed: 1, transmission: 2,
                 description: "The virus replaces the melanin in the skin with reactive pigment, by adding random crayon powders (which won't actually recolor the host) and color powders (which WILL recolor the host) to the host.",
                 thresholds: []
             },
             {
-                name: "Radioactive Resonance", level: 6,
-                stealth: -1, resistance: -2, stage_speed: 0, transmission: -3,
+                name: "Radioactive Resonance", level: 6,                severity: 0,
+                stealth: -1, resistance: -2, stage_speed: 2, transmission: -3,
                 description: "Heals brute, burn, and toxin damage while the host is irradiated. Higher radiation levels increase the healing speed.",
                 thresholds: [
                     { stat: "Resistance", value: 7, effect: "The effect is 2 times stronger. (Increases healing speed.)" }
                 ]
             },
             {
-                name: "Regenerative Coma", level: 8,
+                name: "Regenerative Coma", level: 8,                severity: 0,
                 stealth: 0, resistance: 2, stage_speed: -3, transmission: -2,
                 description: "Causes the host to fall into a death-like coma when heavy brute or burn damage is taken, then rapidly cures their wounds.",
                 thresholds: [
@@ -1145,7 +1152,7 @@
                 ]
             },
             {
-                name: "Self-Respiration", level: 6,
+                name: "Self-Respiration", level: 6,                severity: 0,
                 stealth: 1, resistance: -3, stage_speed: -3, transmission: -4,
                 description: "Quickly heals oxygen damage, negating the need for air.",
                 thresholds: [
@@ -1153,13 +1160,13 @@
                 ]
             },
             {
-                name: "Sensory Restoration", level: 4,
+                name: "Sensory Restoration", level: 4,                severity: 0,
                 stealth: 0, resistance: 1, stage_speed: -2, transmission: 2,
                 description: "Restores mob's senses by fixing eye and ear damage.",
                 thresholds: []
             },
             {
-                name: "Sneezing", level: 1,
+                name: "Sneezing", level: 1,                severity: 1,
                 stealth: -2, resistance: 3, stage_speed: 0, transmission: 4,
                 description: "The virus causes irritation of the nasal cavity, making the host sneeze occasionally. Sneezes from this symptom will spread the virus in a 4 meter cone in front of the host.",
                 thresholds: [
@@ -1169,8 +1176,8 @@
                 ]
             },
             {
-                name: "Spontaneous Combustion", level: 6,
-                stealth: -1, resistance: -4, stage_speed: -3, transmission: -4,
+                name: "Spontaneous Combustion", level: 6,                severity: 5,
+                stealth: 0, resistance: 0, stage_speed: -1, transmission: -2,
                 description: "Sets your body on fire periodically.",
                 thresholds: [
                     { stat: "Stage Speed", value: 4, effect: "The effect is 1.5 times stronger. (Increases the intensity of the flames.)" },
@@ -1180,7 +1187,7 @@
                 ]
             },
             {
-                name: "Starlight Condensation", level: 6,
+                name: "Starlight Condensation", level: 6,                severity: 0,
                 stealth: -1, resistance: -2, stage_speed: 0, transmission: 1,
                 description: "Heals brute, burn, and toxin damage while exposed to starlight. Heals toxin more efficiently. Actually being in space intensifies the effect.",
                 thresholds: [
@@ -1189,15 +1196,15 @@
                 ]
             },
             {
-                name: "Thermoregulation", level: 5,
-                stealth: 0, resistance: 1, stage_speed: -2, transmission: -1,
+                name: "Thermoregulation", level: 5,                severity: 0,
+                stealth: 0, resistance: 1, stage_speed: -2, transmission: 0,
                 description: "Constantly regulates body temperature.",
                 thresholds: [
                     { stat: "Resistance", value: 8, effect: "The effect is 1.75 times stronger. (Increases thermal regulation speed.)" }
                 ]
             },
             {
-                name: "Tissue Hydration", level: 6,
+                name: "Tissue Hydration", level: 6,                severity: 0,
                 stealth: 0, resistance: -1, stage_speed: 0, transmission: 1,
                 description: "Heals brute and burn damage if the host drank water recently, or if they're wet. Heals burn damage more efficiently.",
                 thresholds: [
@@ -1206,7 +1213,7 @@
                 ]
             },
             {
-                name: "Toxolysis", level: 7,
+                name: "Toxolysis", level: 7,                severity: 0,
                 stealth: 0, resistance: -2, stage_speed: 2, transmission: -2,
                 description: "Purges all chemicals at a fast rate from the bloodstream.",
                 thresholds: [
@@ -1215,20 +1222,20 @@
                 ]
             },
             {
-                name: "Viral Evolutionary Acceleration", level: 3,
+                name: "Viral Evolutionary Acceleration", level: 3,                severity: 0,
                 stealth: -2, resistance: -3, stage_speed: 5, transmission: 3,
                 description: "Massively buffs the evolutionary cycle of viruses, causing it to be faster acting, better at infecting, but more easily detected and cured.",
                 thresholds: []
             },
             {
-                name: "Viral Self-Adaptation", level: 3,
+                name: "Viral Self-Adaptation", level: 3,                severity: 0,
                 stealth: 3, resistance: 5, stage_speed: -3, transmission: 0,
                 description: "Massively buffs the adaptation of viruses, causing it to be stealthier, harder to cure but slower acting.",
                 thresholds: []
             },
             {
-                name: "Voice Change", level: 6,
-                stealth: -1, resistance: -2, stage_speed: -2, transmission: 2,
+                name: "Voice Change", level: 6,                severity: 2,
+                stealth: 2, resistance: -1, stage_speed: -2, transmission: 2,
                 description: "Changes the voice of the affected mob. Causing confusion in communication. Available in Virus Crates.",
                 thresholds: [
                     { stat: "Transmission", value: 14, effect: "The host's language center of the brain is damaged, leading to complete inability to speak or understand any language." },
@@ -1237,8 +1244,8 @@
                 ]
             },
             {
-                name: "Vomiting", level: 3,
-                stealth: -2, resistance: -1, stage_speed: -1, transmission: 2,
+                name: "Vomiting", level: 3,                severity: 3,
+                stealth: -3, resistance: 2, stage_speed: 0, transmission: 3,
                 description: "Forces the affected mob to vomit! Makes the affected mob lose nutrition and heal toxin damage.",
                 thresholds: [
                     { stat: "Resistance", value: 9, effect: "Host will vomit blood, causing internal damage." },
@@ -1247,8 +1254,8 @@
                 ]
             },
             {
-                name: "Weight Loss", level: 3,
-                stealth: -2, resistance: 2, stage_speed: -2, transmission: -2,
+                name: "Weight Loss", level: 3,                severity: 3,
+                stealth: 0, resistance: 2, stage_speed: -2, transmission: -2,
                 description: "The virus mutates the host's metabolism, making it almost unable to gain nutrition from food.",
                 thresholds: [
                     { stat: "Stealth", value: 4, effect: "The symptom is less noticeable." }
@@ -1429,6 +1436,38 @@
 
         function clearAllSymptoms() {
             selectedSymptoms.clear();
+            renderTable();
+            updateRightPanel();
+        }
+
+        function randomizeSymptoms() {
+            selectedSymptoms.clear();
+            
+            let bestSelection = [];
+            let bestScore = -9999;
+
+            // Try up to 20 times to find a combination with a positive overall stat sum
+            for (let i = 0; i < 20; i++) {
+                const shuffled = [...symptomsData].sort(() => 0.5 - Math.random());
+                const candidate = shuffled.slice(0, MAX_SYMPTOMS);
+                
+                let score = 0;
+                candidate.forEach(sym => {
+                    score += sym.stealth + sym.resistance + sym.stage_speed + sym.transmission;
+                });
+
+                if (score > 0) {
+                    bestSelection = candidate;
+                    break; // Found a positive one, stop searching
+                }
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestSelection = candidate;
+                }
+            }
+
+            bestSelection.forEach(sym => selectedSymptoms.add(sym.name));
             renderTable();
             updateRightPanel();
         }
@@ -1692,6 +1731,52 @@
             updateStatDisplay('stat-transmission', totalStats.transmission);
 
             document.getElementById('selected-count').innerText = `${selectedSymptoms.size} / 6 Selected`;
+
+            // Calculate Severity and Update MedHUD
+            let sev = 0;
+            selectedSymptoms.forEach(name => {
+                const sym = symptomsData.find(s => s.name === name);
+                if (sym && sym.severity !== undefined) sev += sym.severity;
+            });
+
+            if (sev > 0) {
+                sev += Math.round(totalStats.resistance / 12);
+                sev += Math.round(totalStats.stage_speed / 11);
+                sev += Math.round(totalStats.transmission / 8);
+                sev = Math.round(sev / 2);
+                sev = sev * (selectedSymptoms.size / 6);
+                sev = Math.min(Math.max(Math.round(sev), 1), 7);
+            }
+
+            const hudIcon = document.getElementById('medhud-icon');
+            const hudLabel = document.getElementById('medhud-label');
+            const hudContainer = document.getElementById('medhud-container');
+            
+            if (window.biohazardInterval) clearInterval(window.biohazardInterval);
+
+            if (selectedSymptoms.size > 0) {
+                hudContainer.style.display = 'flex';
+                if (sev <= 0) { hudIcon.src = 'icons/hudbuff.png'; hudLabel.innerText = 'Positive'; hudLabel.style.color = '#60a5fa'; hudLabel.style.fontWeight = 'bold'; }
+                else if (sev === 1) { hudIcon.src = 'icons/hudill0.png'; hudLabel.innerText = 'Harmless'; hudLabel.style.color = 'var(--text-muted)'; hudLabel.style.fontWeight = 'normal'; }
+                else if (sev === 2) { hudIcon.src = 'icons/hudill1.png'; hudLabel.innerText = 'Minor'; hudLabel.style.color = 'var(--text-muted)'; hudLabel.style.fontWeight = 'normal'; }
+                else if (sev === 3) { hudIcon.src = 'icons/hudill2.png'; hudLabel.innerText = 'Medium'; hudLabel.style.color = 'var(--text-muted)'; hudLabel.style.fontWeight = 'normal'; }
+                else if (sev === 4) { hudIcon.src = 'icons/hudill3.png'; hudLabel.innerText = 'Harmful'; hudLabel.style.color = 'var(--text-muted)'; hudLabel.style.fontWeight = 'normal'; }
+                else if (sev === 5) { hudIcon.src = 'icons/hudill4.png'; hudLabel.innerText = 'Dangerous'; hudLabel.style.color = '#ef4444'; hudLabel.style.fontWeight = 'bold'; }
+                else if (sev >= 6) { 
+                    hudLabel.innerText = 'BIOHAZARD'; 
+                    hudLabel.style.color = '#ef4444';
+                    hudLabel.style.fontWeight = 'bold';
+                    
+                    let isFrame1 = true;
+                    hudIcon.src = 'icons/hudill5.1.png';
+                    window.biohazardInterval = setInterval(() => {
+                        isFrame1 = !isFrame1;
+                        hudIcon.src = isFrame1 ? 'icons/hudill5.1.png' : 'icons/hudill5.2.png';
+                    }, 500);
+                }
+            } else {
+                hudContainer.style.display = 'none';
+            }
 
             const thContainer = document.getElementById('thresholds-container');
             thContainer.innerHTML = '';
