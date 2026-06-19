@@ -1756,23 +1756,34 @@
 
             if (selectedSymptoms.size > 0) {
                 hudContainer.style.display = 'flex';
-                if (sev <= 0) { hudIcon.src = 'icons/hudbuff.png'; hudLabel.innerText = 'Positive'; hudLabel.style.color = '#60a5fa'; hudLabel.style.fontWeight = 'bold'; }
-                else if (sev === 1) { hudIcon.src = 'icons/hudill0.png'; hudLabel.innerText = 'Harmless'; hudLabel.style.color = 'var(--text-muted)'; hudLabel.style.fontWeight = 'normal'; }
-                else if (sev === 2) { hudIcon.src = 'icons/hudill1.png'; hudLabel.innerText = 'Minor'; hudLabel.style.color = 'var(--text-muted)'; hudLabel.style.fontWeight = 'normal'; }
-                else if (sev === 3) { hudIcon.src = 'icons/hudill2.png'; hudLabel.innerText = 'Medium'; hudLabel.style.color = 'var(--text-muted)'; hudLabel.style.fontWeight = 'normal'; }
-                else if (sev === 4) { hudIcon.src = 'icons/hudill3.png'; hudLabel.innerText = 'Harmful'; hudLabel.style.color = 'var(--text-muted)'; hudLabel.style.fontWeight = 'normal'; }
-                else if (sev === 5) { hudIcon.src = 'icons/hudill4.png'; hudLabel.innerText = 'Dangerous'; hudLabel.style.color = '#ef4444'; hudLabel.style.fontWeight = 'bold'; }
-                else if (sev >= 6) { 
-                    hudLabel.innerText = 'BIOHAZARD'; 
-                    hudLabel.style.color = '#ef4444';
+                
+                // Stealth mechanic: If stealth >= severity and severity > 0, the virus is hidden from the MedHUD.
+                if (totalStats.stealth >= sev && sev > 0) {
+                    hudIcon.src = 'icons/hudhealthy.png';
+                    hudLabel.innerText = 'Hidden';
+                    hudLabel.title = 'Stealth is greater than or equal to Severity';
+                    hudLabel.style.color = 'var(--success)';
                     hudLabel.style.fontWeight = 'bold';
-                    
-                    let isFrame1 = true;
-                    hudIcon.src = 'icons/hudill5.1.png';
-                    window.biohazardInterval = setInterval(() => {
-                        isFrame1 = !isFrame1;
-                        hudIcon.src = isFrame1 ? 'icons/hudill5.1.png' : 'icons/hudill5.2.png';
-                    }, 500);
+                } else {
+                    hudLabel.title = ''; // Clear tooltip for normal states
+                    if (sev <= 0) { hudIcon.src = 'icons/hudbuff.png'; hudLabel.innerText = 'Positive'; hudLabel.style.color = '#60a5fa'; hudLabel.style.fontWeight = 'bold'; }
+                    else if (sev === 1) { hudIcon.src = 'icons/hudill0.png'; hudLabel.innerText = 'Harmless'; hudLabel.style.color = 'var(--text-muted)'; hudLabel.style.fontWeight = 'normal'; }
+                    else if (sev === 2) { hudIcon.src = 'icons/hudill1.png'; hudLabel.innerText = 'Minor'; hudLabel.style.color = 'var(--text-muted)'; hudLabel.style.fontWeight = 'normal'; }
+                    else if (sev === 3) { hudIcon.src = 'icons/hudill2.png'; hudLabel.innerText = 'Medium'; hudLabel.style.color = 'var(--text-muted)'; hudLabel.style.fontWeight = 'normal'; }
+                    else if (sev === 4) { hudIcon.src = 'icons/hudill3.png'; hudLabel.innerText = 'Harmful'; hudLabel.style.color = 'var(--text-muted)'; hudLabel.style.fontWeight = 'normal'; }
+                    else if (sev === 5) { hudIcon.src = 'icons/hudill4.png'; hudLabel.innerText = 'Dangerous'; hudLabel.style.color = '#ef4444'; hudLabel.style.fontWeight = 'bold'; }
+                    else if (sev >= 6) { 
+                        hudLabel.innerText = 'BIOHAZARD'; 
+                        hudLabel.style.color = '#ef4444';
+                        hudLabel.style.fontWeight = 'bold';
+                        
+                        let isFrame1 = true;
+                        hudIcon.src = 'icons/hudill5.1.png';
+                        window.biohazardInterval = setInterval(() => {
+                            isFrame1 = !isFrame1;
+                            hudIcon.src = isFrame1 ? 'icons/hudill5.1.png' : 'icons/hudill5.2.png';
+                        }, 500);
+                    }
                 }
             } else {
                 hudContainer.style.display = 'none';
